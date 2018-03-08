@@ -1,0 +1,10 @@
+*.pyc
+*.ini
+*.swp
+settings.*
+config.*
+__pycache__
+bin/
+include/
+lib/
+lib64/
