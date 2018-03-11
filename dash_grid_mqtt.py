@@ -53,7 +53,7 @@ def get_phrases(line, start='{}'):
     print("phrases =", phrases)
     return phrases
 
-def generate_html(n):
+def generate_html(n, backgroundcolor='yellow'):
     data_n = data.get(n)
     if not data_n:
         return [html.H3("No data")]
@@ -71,8 +71,10 @@ def generate_html(n):
         new_text.append(html.Br())
     print("5: ", new_text)
     #style = {'padding': '5px', 'fontSize': '16px'}
-    style = {'fontSize': '16px', 'backgroundColor':'yellow'}
-    return [html.Span(new_text, style=style)]
+    style = {'fontSize': '16px'}
+    style2 = {'fontSize': '16px', 'backgroundColor':backgroundcolor, 'borderWidth':'medium', 'borderColor':'black', 'borderStyle':'solid'}
+    #return [html.Span(new_text, style=style)]
+    return [html.Div([html.Span(new_text, style=style)], style=style2)]
 
 @mqtt.on_connect()
 def handle_connect(client, userdata, flags, rc):
@@ -89,7 +91,7 @@ app.layout = html.Div([
 #######################################################
     dcc.Interval(
         id='interval-component',
-        interval=1*1000, # in milliseconds
+        interval=5000, # in milliseconds
         n_intervals=0),
 #######################################################
 
@@ -97,11 +99,11 @@ app.layout = html.Div([
     [
         html.Div([
             html.Div(id='live-update-text-0'),
-        ], className="six columns"),
+        ], className="two columns"),
 
         html.Div([
             html.Div(id='live-update-text-5'),
-        ], className="six columns")
+        ], className="two columns")
     ],
     className="row"),
 
@@ -119,13 +121,22 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.H3('Row 3 Column 1'),
-            dcc.Graph(id='g31', figure={'data': [{'y': [1, 2, 3]}]})
+            html.Div(id='live-update-text-3'),
+        ], className="three columns"),
+
+        html.Div([
+            html.Div(id='live-update-text-15'),
+        ], className="nine columns")
+    ],
+    className="row"),
+
+    html.Div([
+        html.Div([
+            html.Div(id='live-update-text-4'),
         ], className="six columns"),
 
         html.Div([
-            html.H3('Row 3 Column 2'),
-            dcc.Graph(id='g32', figure={'data': [{'y': [1, 2, 3]}]})
+            html.Div(id='live-update-text-11'),
         ], className="six columns")
     ],
     className="row")
@@ -144,17 +155,37 @@ def update_info_0(n):
 @app.callback(Output('live-update-text-5', 'children'),
               [Input('interval-component', 'n_intervals')])
 def update_info_5(n):
-    return generate_html(5)
+    return generate_html(5, 'coral')
 
 @app.callback(Output('live-update-text-1', 'children'),
               [Input('interval-component', 'n_intervals')])
 def update_info_1(n):
-    return generate_html(1)
+    return generate_html(1, 'lavender')
 
 @app.callback(Output('live-update-text-6', 'children'),
               [Input('interval-component', 'n_intervals')])
 def update_info_6(n):
-    return generate_html(6)
+    return generate_html(6, 'lightblue')
+
+@app.callback(Output('live-update-text-3', 'children'),
+              [Input('interval-component', 'n_intervals')])
+def update_info_3(n):
+    return generate_html(3, 'teal')
+
+@app.callback(Output('live-update-text-15', 'children'),
+              [Input('interval-component', 'n_intervals')])
+def update_info_15(n):
+    return generate_html(15)
+
+@app.callback(Output('live-update-text-4', 'children'),
+              [Input('interval-component', 'n_intervals')])
+def update_info_4(n):
+    return generate_html(4, 'pink')
+
+@app.callback(Output('live-update-text-11', 'children'),
+              [Input('interval-component', 'n_intervals')])
+def update_info_11(n):
+    return generate_html(11, 'silver')
 
 if __name__ == '__main__':
     app.run_server(debug=True)
