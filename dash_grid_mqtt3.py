@@ -31,6 +31,7 @@ import re
 import plotly
 from config import aws_mqtt_uri
 from flask_mqtt import Mqtt
+from random import choice
 
 TEMP1=0
 NEWS=1 #news feeds(WSJ, NYT, ArsTechnica, Reddit All, Twitter)
@@ -51,12 +52,16 @@ WEATHER=15 #also does tides
 INDUSTRY=16
 TEMP2=17 #another temp sensor slot
 
-LAYOUT =   [[(OUTLOOK, GOOGLE), ("six", "six")],
-           [(TODOS, NEWS), ("six", "six")],
-           [(SALES_FORECAST, WEATHER), ('six', 'six')],
-           [(TOP_SALES, INDUSTRY), ("two", "ten")],
-           [(TEMP1, STOCK_QUOTE), ("six", "six")],
+LAYOUT =   [
+            [(OUTLOOK, GOOGLE), ("seven", "five")],
+            [(TODOS, NEWS), ("six", "six")],
+            [(SALES_FORECAST, WEATHER), ('six', 'six')],
+            [(TOP_SALES, INDUSTRY), ("seven", "five")],
+            [(TEMP1, STOCK_QUOTE), ("six", "six")]
            ]
+
+#COLORS = [(backgroundcolor, textcolor)...]
+COLORS = [('blue','white'),('red','white'),('green','white'),('white','black'),('gray','black'),('teal','black')]
 
 app = dash.Dash(__name__)
 
@@ -92,7 +97,7 @@ def get_phrases(line, start='{}'):
     print("phrases =", phrases)
     return phrases
 
-def generate_html(n, backgroundcolor='yellow'):
+def generate_html(n, backgroundcolor='yellow', textcolor='black'): 
     data_n = data.get(n)
     if not data_n:
         return [html.H3("No data")]
@@ -109,7 +114,7 @@ def generate_html(n, backgroundcolor='yellow'):
         new_text.extend(new_line)
         new_text.append(html.Br())
 
-    span_style = {'fontSize': '16px'}
+    span_style = {'fontSize': '16px', 'color':textcolor} 
 
     div_style = {'fontSize': '16px',
                  'backgroundColor':backgroundcolor,
@@ -132,11 +137,11 @@ def handle_mqtt_message(client, userdata, message):
 def create_layout():
 
     layout = []
-    for item in LAYOUT:
-        id0 = 'live-update-text-'+str(item[0][0])
-        id1 = 'live-update-text-'+str(item[0][1])
-        class_name0 = "{} columns".format(item[1][0])
-        class_name1 = "{} columns".format(item[1][1])
+    for row in LAYOUT:
+        id0 = 'live-update-text-'+str(row[0][0])
+        id1 = 'live-update-text-'+str(row[0][1])
+        class_name0 = "{} columns".format(row[1][0])
+        class_name1 = "{} columns".format(row[1][1])
 
         layout.append(
                      html.Div(
@@ -165,14 +170,15 @@ app.layout = html.Div(layout)
 
 app.css.append_css({'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'})
 
-def create_callback(n):
+def create_callback(n, bcolor, tcolor):
     def callback(input_value): # I think this is n_intervals
-        return generate_html(n)
+        return generate_html(n, bcolor, tcolor)
     return callback
 
 for row in LAYOUT:
     for item_num in row[0]:
-        f = create_callback(item_num)
+        colors = choice(COLORS)
+        f = create_callback(item_num, colors[0], colors[1])
         app.callback(Output(f'live-update-text-{item_num}', 'children'), [Input('interval-component', 'n_intervals')])(f)
 
 if __name__ == '__main__':
