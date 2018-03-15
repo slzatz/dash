@@ -61,9 +61,14 @@ LAYOUT =   [
            ]
 
 #COLORS = [(backgroundcolor, textcolor)...]
-COLORS = [('blue','white'),('red','white'),('green','white'),('white','black'),('gray','black'),('teal','black')]
+COLORS = [('cyan','black'),('lavender','black'),('lightcoral','white'),('white','black'),('dimgray','white'),('teal','black'),('lightsalmon', 'black'),('lightskyblue', 'black'), ('plum','black')]
 
 app = dash.Dash(__name__)
+
+####### code below is for using a local css file placed in the assets folder #################
+#app = dash.Dash(__name__, static_folder='assets')
+#app.scripts.config.serve_locally=True
+#app.css.config.serve_locally=True
 
 app.config['MQTT_BROKER_URL'] = aws_mqtt_uri 
 app.config['MQTT_BROKER_PORT'] = 1883  # default port for non-tls connection
@@ -104,7 +109,7 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black'):
 
     text = data_n.get('text', "Somehow no text key")
     header = data_n.get('header', "Somehow no header key")
-    new_text = [html.H3(header)]
+    new_text = []
     for line in text:
         phrases = get_phrases(line)
         new_line=[]
@@ -114,7 +119,8 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black'):
         new_text.extend(new_line)
         new_text.append(html.Br())
 
-    span_style = {'fontSize': '16px', 'color':textcolor} 
+    span_style = {'fontSize': '20px', 'color':textcolor} 
+
 
     div_style = {'fontSize': '16px',
                  'backgroundColor':backgroundcolor,
@@ -122,7 +128,11 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black'):
                  'borderColor':'black',
                  'borderStyle':'solid'}
 
-    return [html.Div([html.Span(new_text, style=span_style)], style=div_style)]
+    # complete kluge to present table (infobox=11) with monospaced font
+    if n!=11:
+        return [html.Div([html.H3(header), html.Span(new_text, style=span_style)], style=div_style)]
+
+    return [html.Div([html.H3(header), html.Pre(new_text, style={'fontSize':'20px'})], style=div_style)]
 
 @mqtt.on_connect()
 def handle_connect(client, userdata, flags, rc):
@@ -159,7 +169,9 @@ def create_layout():
     return layout
 
 layout = [
-    dcc.Interval(
+        # uncomment next line (and a few lines at beginning of script if using local css file
+        #html.Link(href='/assets/bWLwgP.css', rel='stylesheet'), 
+        dcc.Interval(
         id='interval-component',
         interval=5000, # in milliseconds
         n_intervals=0)
@@ -170,8 +182,9 @@ app.layout = html.Div(layout)
 
 app.css.append_css({'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'})
 
+# code below enables generating callbacks programatically v. having to write each one out
 def create_callback(n, bcolor, tcolor):
-    def callback(input_value): # I think this is n_intervals
+    def callback(input_value): # input_value is n_intervals
         return generate_html(n, bcolor, tcolor)
     return callback
 
