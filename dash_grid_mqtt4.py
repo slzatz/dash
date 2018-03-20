@@ -54,10 +54,12 @@ TEMP2=17 #another temp sensor slot
 
 # LAYOUT consists of rows and within rows columns that are tuples of (info_source, # of columns)
 LAYOUT = [
-          [(OUTLOOK, 'five'), (GOOGLE, 'four'), (NEWS, 'three')],
+          [(OUTLOOK, 'four'), (GOOGLE, 'four'), (NEWS, 'four')],
           [(SALES_FORECAST, 'three'), (WEATHER, 'three'), (STOCK_QUOTE, 'three'), (TEMP1, 'three')],
-          [(TODOS, 'four'), (TOP_SALES, 'four'), (INDUSTRY, 'four')]
+          [(TODOS, 'four'), (TOP_SALES, 'five'), (INDUSTRY, 'three')]
          ]
+
+ROW_HEIGHT = ['500px', '250px', '800px']
 
 #COLORS = [(backgroundcolor, textcolor)...]
 COLORS = [('cyan','black'),('lavender','black'),('lightcoral','white'),('white','black'),('dimgray','white'),('teal','black'),('lightsalmon', 'black'),('lightskyblue', 'black'), ('plum','black')]
@@ -65,9 +67,9 @@ COLORS = [('cyan','black'),('lavender','black'),('lightcoral','white'),('white',
 app = dash.Dash(__name__)
 
 ####### code below is for using a local css file placed in the assets folder #################
-#app = dash.Dash(__name__, static_folder='assets')
-#app.scripts.config.serve_locally=True
-#app.css.config.serve_locally=True
+app = dash.Dash(__name__, static_folder='assets')
+app.scripts.config.serve_locally=True
+app.css.config.serve_locally=True
 
 app.config['MQTT_BROKER_URL'] = aws_mqtt_uri 
 app.config['MQTT_BROKER_PORT'] = 1883  # default port for non-tls connection
@@ -101,7 +103,7 @@ def get_phrases(line, start='{}'):
     print("phrases =", phrases)
     return phrases
 
-def generate_html(n, backgroundcolor='yellow', textcolor='black'): 
+def generate_html(n, backgroundcolor='yellow', textcolor='black', row_height='500px'): 
     data_n = data.get(n)
     if not data_n:
         return [html.H3("No data")]
@@ -118,20 +120,24 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black'):
         new_text.extend(new_line)
         new_text.append(html.Br())
 
-    span_style = {'fontSize': '20px', 'color':textcolor} 
+    text_style = {'fontSize': '24px', 'color':textcolor} 
 
 
-    div_style = {'fontSize': '16px',
+    div_style = {
                  'backgroundColor':backgroundcolor,
                  'borderWidth':'medium',
                  'borderColor':'black',
-                 'borderStyle':'solid'}
+                 'borderStyle':'solid',
+                 'display':'block',
+                 'padding':'10px',
+                 'height':row_height
+                 }
 
     # complete kluge to present table (infobox=11) with monospaced font
     if n!=11:
-        return [html.Div([html.H3(header), html.Span(new_text, style=span_style)], style=div_style)]
+        return [html.Div([html.H3(header), html.Span(new_text, style=text_style)], style=div_style)]
 
-    return [html.Div([html.H3(header), html.Pre(new_text, style={'fontSize':'20px'})], style=div_style)]
+    return [html.Div([html.H3(header), html.Pre(new_text, style=text_style)], style=div_style)]
 
 @mqtt.on_connect()
 def handle_connect(client, userdata, flags, rc):
@@ -151,7 +157,7 @@ def create_layout():
         row_elements = []
         for col in row:
             row_elements.append(html.Div([html.Div(id='{}{}'.format(s, col[0]))],
-                                         className='{} columns'.format(col[1])))
+                                         className='{} columns'.format(col[1]), style={'margin':1})) 
 
         layout.append(html.Div(row_elements, className='row'))
 
@@ -159,7 +165,7 @@ def create_layout():
 
 layout = [
         # uncomment next line (and a few lines at beginning of script if using local css file
-        #html.Link(href='/assets/bWLwgP.css', rel='stylesheet'), 
+        html.Link(href='/assets/bWLwgP.css', rel='stylesheet'), 
         dcc.Interval(
         id='interval-component',
         interval=5000, # in milliseconds
@@ -169,18 +175,18 @@ layout = [
 layout.extend(create_layout())
 app.layout = html.Div(layout)
 
-app.css.append_css({'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'})
+#app.css.append_css({'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'})
 
 # code below enables generating callbacks programatically v. having to write each one out
-def create_callback(n, bcolor, tcolor):
+def create_callback(n, bcolor, tcolor, row_height):
     def callback(input_value): # input_value is n_intervals
-        return generate_html(n, bcolor, tcolor)
+        return generate_html(n, bcolor, tcolor, row_height)
     return callback
 
-for row in LAYOUT:
+for n,row in enumerate(LAYOUT):
     for col in row:
         colors = choice(COLORS)
-        f = create_callback(col[0], colors[0], colors[1])
+        f = create_callback(col[0], colors[0], colors[1], ROW_HEIGHT[n])
         app.callback(Output(f'live-update-text-{col[0]}', 'children'), [Input('interval-component', 'n_intervals')])(f)
 
 if __name__ == '__main__':
