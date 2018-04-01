@@ -23,21 +23,21 @@ import wand.image
 import requests
 import base64
 
-ARTIST_IMAGE=7
-LYRICS=8
-TRACK_INFO=9
-SONOS_STATUS=10
+ARTIST_IMAGE=7 # published to aws mqtt broker with topic 'images' by esp_tft_mqtt_photos.py running on AWS
+LYRICS=8  # published to aws mqtt broker with topic 'esp_tft' by esp_tft_mqtt_photos.py running on AWS
+TRACK_INFO=9 # published by sonos_track_info.py with topic 'esp_tft' running on local raspberry pi
+SONOS_STATUS=10 # published by sonos_track_info.py with topic 'esp_tft' running on local raspberry pi
 
 # LAYOUT consists of rows and within rows columns that are tuples of (info_source, # of columns)
 LAYOUT = [
-          [(ARTIST_IMAGE, 'six'), (LYRICS, 'six')],
+          [(ARTIST_IMAGE, 'two'), (LYRICS, 'two')],
           [(TRACK_INFO, 'three'), (SONOS_STATUS, 'three')]
          ]
 
 ROW_HEIGHT = ['800px', '250px']
 
 #COLORS = [(backgroundcolor, textcolor)...]
-COLORS = [('cyan','black'),('lavender','black'),('lightcoral','white'),('white','black'),('dimgray','white'),('teal','black'),('lightsalmon', 'black'),('lightskyblue', 'black'), ('plum','black')]
+COLORS = [('cyan','black'),('lavender','black'),('lightcoral','white'),('white','black'),('dimgray','white'),('teal','white'),('lightsalmon', 'black'),('lightskyblue', 'black'), ('plum','black')]
 
 app = dash.Dash(__name__)
 
@@ -83,8 +83,8 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black', row_height='50
     if not data_n:
         return [html.H3("No data")]
 
-    text = data_n.get('text', "Somehow no text key")
-    header = data_n.get('header', "Somehow no header key")
+    text = data_n.get('text', ["Blank"])
+    header = data_n.get('header', "No Lyrics (yet)")
     new_text = []
     for line in text:
         phrases = get_phrases(line)
@@ -98,7 +98,15 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black', row_height='50
     text_style = {'fontSize': '18px', 'color':textcolor} 
 
 
-    div_style = {
+    if n < 9:
+        textcolor = 'black'
+        div_style = {
+                 #'padding':'10px',
+                 'height':row_height
+                 }
+    else:
+        text_style = {'fontSize': '18px', 'color':textcolor} 
+        div_style = {
                  'backgroundColor':backgroundcolor,
                  'borderWidth':'medium',
                  'borderColor':'black',
@@ -108,43 +116,51 @@ def generate_html(n, backgroundcolor='yellow', textcolor='black', row_height='50
                  'height':row_height
                  }
 
-    # complete kluge to present table (infobox=11) with monospaced font
-    if n!=11:
-        return [html.Div([html.H3(header), html.Span(new_text, style=text_style)], style=div_style)]
+    text_style = {'fontSize': '18px', 'color':textcolor} 
+    return [html.Div([html.H3(header, style={'color':textcolor}), html.Span(new_text, style=text_style)], style=div_style)]
 
-    return [html.Div([html.H3(header), html.Pre(new_text, style=text_style)], style=div_style)]
 
 def generate_image(n):
     #data_n = data.get(n)
-    x = data.get(n)['uri']
-    print(x)
+
     try:
-        response = requests.get(x, timeout=5.0)
+        x = data.get(n)['uri']
+        print(x)
     except Exception as e:
-        print("response = requests.get(url) generated exception: ", e)
-        # in some future better world may indicate that the image was bad
+        print("x = data.get(n)['uri'] generated exception: ", e)
+        #return
+        img = wand.image.Image(filename ='image_exception.jpg')
 
-        return
-    else:     
+    #if x in encoded_images:
+    #    pass
+        # we already have the image
+    else:
         try:
-            img = wand.image.Image(file=BytesIO(response.content))
+            response = requests.get(x, timeout=5.0)
         except Exception as e:
-            print("img = wand.image.Image(file=BytesIO(response.content)) generated exception from url:", x, "Exception:", e)
+            print("response = requests.get(url) generated exception: ", e)
             # in some future better world may indicate that the image was bad
+            img = wand.image.Image(filename ='image_exception.jpg')
+            #return
+        else:     
+            try:
+                img = wand.image.Image(file=BytesIO(response.content))
+            except Exception as e:
+                print("img = wand.image.Image(file=BytesIO(response.content)) generated exception from url:", x, "Exception:", e)
+                # in some future better world may indicate that the image was bad
+                img = wand.image.Image(filename ='image_exception.jpg')
 
-            return
+    ww = img.width
+    hh = img.height
+    print(f"width={ww}; height={hh}")
+    sq = ww if ww <= hh else hh
+    t = ((ww-sq)//2,(hh-sq)//2,(ww+sq)//2,(hh+sq)//2) 
 
     try:
-        ww = img.width
-        hh = img.height
-        sq = ww if ww <= hh else hh
-        t = ((ww-sq)//2,(hh-sq)//2,(ww+sq)//2,(hh+sq)//2) 
         img.crop(*t)
-        # resize should take the image and enlarge it without cropping so will fill vertical but leave space for lyrics
-        #img.resize(screen_height,screen_height)
-        img.resize(400,400)
+        img.resize(1000,1000)
         conv_img = img.convert('png')
-        img.close()
+        #img.close()  ###### might need this ######################################################################
     except Exception as e:
         print("img.transfrom or img.convert error:", e)
         # in some future better world may indicate that the image was bad
@@ -162,44 +178,30 @@ def generate_image(n):
         return
 
     f.seek(0)
-    #img = pygame.image.load(f, 'bmp').convert()
-    #f.close()
-    #img_rect = img.get_rect()
-
-    #print("img_rect =", img_rect)
-
-    #foo = pygame.Surface((400,400)) # (800,800) someday will make this something that you pass with the image
-    #foo.fill((0,0,0))
-    #foo.set_alpha(175) #125
-    
-    #foo.blit(img, (0,0))      
-    #encoded_image = base64.b64encode(open(f, 'rb').read())
     encoded_image = base64.b64encode(f.read())
     f.close()
+   
+    #encoded_images.append(uri, encoded_image)
+
     return html.Div([
                     html.Img(src='data:image/png;base64,{}'.format(encoded_image.decode()))
                     ])
-    return foo
 
 @mqtt.on_connect()
 def handle_connect(client, userdata, flags, rc):
-    mqtt.subscribe('esp_tft')
-    mqtt.subscribe('images')
+    mqtt.subscribe('esp_tft') # obtains track info, sonos status and lyrics
+    mqtt.subscribe('images') # obtains artist images
 
 @mqtt.on_message()
 def handle_mqtt_message(client, userdata, message):
     global data
     payload = json.loads(message.payload.decode())
-    #data[payload['pos']] = payload   
     if payload['pos'] not in (7,8,9,10):
         return
-    if message.topic == 'imagesdddddddddddddd':
-        data[payload['pos']] = "url: "+payload['uri']
-    else:
-        data[payload['pos']] = payload   
+    data[payload['pos']] = payload   
         
     
-    print(payload['pos'],data[payload['pos']])
+    print("\n************payload = ", payload['pos'],data[payload['pos']],"********************\n")
 
 def create_layout():
 
