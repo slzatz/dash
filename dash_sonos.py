@@ -30,8 +30,8 @@ SONOS_STATUS=10 # published by sonos_track_info.py with topic 'esp_tft' running 
 
 # LAYOUT consists of rows and within rows columns that are tuples of (info_source, # of columns)
 LAYOUT = [
-          [(ARTIST_IMAGE, 'two'), (LYRICS, 'two')],
-          [(TRACK_INFO, 'three'), (SONOS_STATUS, 'three')]
+          [(ARTIST_IMAGE, 'five'), (LYRICS, 'four')],
+          [(TRACK_INFO, 'two'), (SONOS_STATUS, 'two')]
          ]
 
 ROW_HEIGHT = ['800px', '250px']
