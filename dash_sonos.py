@@ -196,6 +196,7 @@ def handle_connect(client, userdata, flags, rc):
 def handle_mqtt_message(client, userdata, message):
     global data
     payload = json.loads(message.payload.decode())
+    print("\n#################", payload, "#####################\n")
     if payload['pos'] not in (7,8,9,10):
         return
     data[payload['pos']] = payload   
