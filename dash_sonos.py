@@ -1,3 +1,4 @@
+#!bin/python
 '''
 phrases are a list of tuples like [('{}', 'forecast: '), ('{red}', '113.8M')]
 
