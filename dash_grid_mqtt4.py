@@ -31,7 +31,7 @@ import datetime
 import json
 import re
 import plotly
-from config import aws_mqtt_uri, user_list
+from config import aws_mqtt_uri, user_list, host
 from flask_mqtt import Mqtt
 from random import choice
 
@@ -191,4 +191,4 @@ for n,row in enumerate(LAYOUT):
         app.callback(Output(f'live-update-text-{col[0]}', 'children'), [Input('interval-component', 'n_intervals')])(f)
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, host=host)
