@@ -26,11 +26,12 @@ import dash
 from dash.dependencies import Input, Output
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_auth
 import datetime
 import json
 import re
 import plotly
-from config import aws_mqtt_uri
+from config import aws_mqtt_uri, user_list
 from flask_mqtt import Mqtt
 from random import choice
 
@@ -65,10 +66,9 @@ ROW_HEIGHT = ['500px', '250px', '800px']
 #COLORS = [(backgroundcolor, textcolor)...]
 COLORS = [('cyan','black'),('lavender','black'),('lightcoral','white'),('white','black'),('dimgray','white'),('teal','black'),('lightsalmon', 'black'),('lightskyblue', 'black'), ('plum','black')]
 
-app = dash.Dash(__name__)
-
 ####### code below is for using a local css file placed in the assets folder #################
 app = dash.Dash(__name__, static_folder='assets')
+auth = dash_auth.BasicAuth(app, user_list)
 app.scripts.config.serve_locally=True
 app.css.config.serve_locally=True
 
